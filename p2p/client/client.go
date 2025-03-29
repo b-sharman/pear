@@ -15,20 +15,28 @@ import (
 )
 
 func Start(ctx context.Context, roomid string) {
+
+	relay := peerstore.AddrInfo{
+		ID:    p2p.RelayPeerID,
+		Addrs: p2p.RelayMultiAddrs(),
+	}
+
 	// start a libp2p node that listens on a random local TCP port
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
-		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{{
-			ID:    p2p.RelayPeerID,
-			Addrs: p2p.RelayMultiAddrs(),
-		}}),
+		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{relay}),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	// print the node's PeerInfo in multiaddr format
+	// connect to the relay
+	if err := node.Connect(context.Background(), relay); err != nil {
+		panic(err)
+	}
+
+	// Print this node's `PeerInfo` in multiaddr format
 	peerInfo := peerstore.AddrInfo{
 		ID:    node.ID(),
 		Addrs: node.Addrs(),
