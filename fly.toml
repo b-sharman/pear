@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for pear-programming on 2025-03-29T06:56:39-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'pear-programming'
+primary_region = 'ord'
+
+[build]
+
+[env]
+  PORT = '8080'
+
+[[mounts]]
+  source = 'db'
+  destination = '/db'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
