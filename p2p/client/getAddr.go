@@ -5,12 +5,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/b-sharman/pear/p2p"
 )
 
-func getAddr(roomid string) string {
+func getAddr(roomid string) (string, error) {
 	u, _ := url.Parse(p2p.ServerUrl)
 	u = u.JoinPath("lookup")
 	q := u.Query()
@@ -19,16 +18,15 @@ func getAddr(roomid string) string {
 	// get the desired multiaddr as a string from the registry
 	resp, err := http.Get(u.String())
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if resp.StatusCode != 200 {
-		fmt.Printf("name server returned %s\n", resp.Status)
-		os.Exit(1)
+		return "", fmt.Errorf("name server returned: %s\n", resp.Status)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer resp.Body.Close()
-	return string(body)
+	return string(body), nil
 }

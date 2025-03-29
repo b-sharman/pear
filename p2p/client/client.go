@@ -1,18 +1,20 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/b-sharman/pear/p2p"
 	"github.com/libp2p/go-libp2p"
 	peerstore "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-func Start(roomid string) {
+func Start(ctx context.Context, roomid string) {
 	// start a libp2p node that listens on a random local TCP port
 	node, err := libp2p.New()
 	if err != nil {
@@ -30,7 +32,11 @@ func Start(roomid string) {
 	}
 	fmt.Println("libp2p node address:", addrs[0])
 
-	addrStr := getAddr(roomid)
+	addrStr, err := getAddr(roomid)
+	if err != nil {
+		fmt.Printf("encountered err on getting addr: %s\n", err.Error())
+		return
+	}
 	fmt.Printf("connecting to %s\n", addrStr)
 
 	// get a peerstore.AddrInfo from addrStr
@@ -44,16 +50,27 @@ func Start(roomid string) {
 	}
 
 	// connect to the peer node
-	if err := node.Connect(context.Background(), *peer); err != nil {
+	if err := node.Connect(ctx, *peer); err != nil {
 		panic(err)
 	}
-	fmt.Println("connected")
 
-	// wait for a SIGINT or SIGTERM signal
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
-	fmt.Println("Received signal, shutting down...")
+	stream, err := node.NewStream(ctx, peer.ID, protocol.ID(p2p.ProtocolID))
+
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+	go func() {
+		io.Copy(os.Stdout, rw.Reader)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		// actual long work
+		io.Copy(rw.Writer, os.Stdin)
+	}
+
+	stream.Close()
 
 	// shut the node down
 	if err := node.Close(); err != nil {
