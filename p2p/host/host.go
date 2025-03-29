@@ -6,15 +6,15 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-)
 
-const serverUrl = "https://pear-programming.fly.dev"
+	"github.com/b-sharman/pear/p2p"
+)
 
 func Start() error {
 	// replace with randomly generated ID
 	roomid := "oheaohea"
 
-	u, _ := url.Parse(serverUrl)
+	u, _ := url.Parse(p2p.ServerUrl)
 	u = u.JoinPath("register", roomid)
 	resp, err := http.Post(u.String(), "", nil)
 	if err != nil {

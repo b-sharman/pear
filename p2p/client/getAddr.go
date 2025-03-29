@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/b-sharman/pear/p2p"
 )
 
-const serverUrl = "https://pear-programming.fly.dev"
-
 func getAddr(roomid string) string {
-	u, _ := url.Parse(serverUrl)
+	u, _ := url.Parse(p2p.ServerUrl)
 	u = u.JoinPath("lookup")
 	q := u.Query()
 	q.Set("roomid", roomid)
