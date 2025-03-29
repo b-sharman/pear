@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/spf13/cobra"
 	bolt "go.etcd.io/bbolt"
 )
@@ -26,6 +30,9 @@ var nameServerCmd = &cobra.Command{
 		})
 		addr := ":8080"
 		fmt.Println("listening on ", addr)
+
+		go relayServer()
+
 		listenAndServe(addr, kv)
 	},
 	Hidden: true,
@@ -96,4 +103,33 @@ func listenAndServe(addr string, db *bolt.DB) {
 	})
 
 	log.Fatalln(http.ListenAndServe(addr, nil))
+}
+
+func relayServer() {
+
+	privKey := os.Getenv("PEAR_PRIV_KEY")
+	if privKey == "" {
+		log.Panicln("no private key in PEAR_PRIV_KEY")
+		return
+	}
+	decodedKey, err := hex.DecodeString(privKey)
+	if err != nil {
+		log.Panicln("unable to decode private key from hex")
+		return
+	}
+
+	key, err := crypto.UnmarshalEd25519PrivateKey(decodedKey)
+	if err != nil {
+		log.Panicln("unable to unmarshaled25519privatekey")
+		return
+	}
+
+	_, err = libp2p.New(
+		libp2p.EnableRelayService(),
+		libp2p.Identity(key),
+	)
+	if err != nil {
+		log.Panicln("unable to start/make new libp2p node")
+		return
+	}
 }

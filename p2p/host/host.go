@@ -22,6 +22,10 @@ func Start(roomid string, exitSignal chan int) error {
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
+		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{{
+			ID:    p2p.RelayPeerID,
+			Addrs: p2p.RelayMultiAddrs(),
+		}}),
 	)
 	if err != nil {
 		panic(err)
