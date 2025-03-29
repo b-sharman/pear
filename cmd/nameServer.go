@@ -53,6 +53,7 @@ func listenAndServe(addr string, db *bolt.DB) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		log.Printf("lookup: %s -  %s\n", roomid, multiaddr)
 		w.WriteHeader(200)
 		fmt.Fprint(w, multiaddr)
 	})
@@ -76,6 +77,8 @@ func listenAndServe(addr string, db *bolt.DB) {
 			return err
 		})
 
+		log.Printf("new room registered: %s -  %s\n", roomid, multiaddr)
+
 		w.WriteHeader(http.StatusCreated)
 	})
 
@@ -92,6 +95,7 @@ func listenAndServe(addr string, db *bolt.DB) {
 			return err
 		})
 
+		log.Printf("room deleted: %s\n", roomid)
 		w.WriteHeader(http.StatusOK)
 	})
 
