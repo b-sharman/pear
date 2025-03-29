@@ -10,6 +10,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/spf13/cobra"
 	bolt "go.etcd.io/bbolt"
 )
@@ -129,7 +130,7 @@ func relayServer() {
 	}
 
 	port := 3000
-	_, err = libp2p.New(
+	node, err := libp2p.New(
 		libp2p.EnableRelayService(),
 		libp2p.Identity(key),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)),
@@ -138,4 +139,12 @@ func relayServer() {
 		log.Panicln("unable to start/make new libp2p node")
 		return
 	}
+
+	_, err = relay.New(node)
+	if err != nil {
+		log.Panicf("error when calling relay.New: %s", err.Error())
+		return
+	}
+
+	// TODO: set up a nice channel thing so we can call defer relay.Close()?
 }
