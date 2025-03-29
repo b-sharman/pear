@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"github.com/b-sharman/pear/p2p/client"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +29,5 @@ func init() {
 }
 
 func connect(cmd *cobra.Command, args []string) {
-	roomid := args[0]
-	fmt.Printf("called connect to %s\n", roomid)
+	client.Start(args[0])
 }
