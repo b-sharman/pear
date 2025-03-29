@@ -6,7 +6,7 @@ const ServerUrl = "https://pear-programming.fly.dev/api"
 const ProtocolID = "/pear-programming/1.0.0"
 const RelayPeerID = "12D3KooWDpUzpsoB1nGF8T31iouGcEiCFNKn2Zezto3kEfKECxEw"
 
-var relayMultiAddrs = [...]string{"/dns4/pear-programming.fly.dev/tcp/1337"}
+var relayMultiAddrs = [...]string{"/dns4/pear-programming.fly.dev/tcp/3000"}
 
 func RelayMultiAddrs() []multiaddr.Multiaddr {
 	addrs := []multiaddr.Multiaddr{}

@@ -128,7 +128,7 @@ func relayServer() {
 		return
 	}
 
-	port := 1337
+	port := 3000
 	_, err = libp2p.New(
 		libp2p.EnableRelayService(),
 		libp2p.Identity(key),

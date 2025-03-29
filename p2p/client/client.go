@@ -74,7 +74,7 @@ func Start(ctx context.Context, roomid string) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	go func() {
-		// This is technically a dangling goroutine
+		// This is technically a dangling go routine
 		io.Copy(os.Stdout, rw.Reader)
 	}()
 

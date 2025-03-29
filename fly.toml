@@ -27,8 +27,8 @@ primary_region = 'ord'
   size = 'shared-cpu-1x'
 
 [[services]]
-  internal_port = 1337
+  internal_port = 3000
   protocol = "tcp"
 
   [[services.ports]]
-    port = "1337"
+    port = "3000"
