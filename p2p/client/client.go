@@ -39,7 +39,7 @@ func Start(ctx context.Context, roomid string) {
 	}
 	fmt.Printf("connecting to %s\n", addrStr)
 
-	// get a peerstore.AddrInfo from addrStr
+	// Get a peerstore.AddrInfo from addrStr
 	addr, err := multiaddr.NewMultiaddr(addrStr)
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func Start(ctx context.Context, roomid string) {
 		panic(err)
 	}
 
-	// connect to the peer node
+	// Connect to the peer node
 	if err := node.Connect(ctx, *peer); err != nil {
 		panic(err)
 	}
@@ -59,6 +59,7 @@ func Start(ctx context.Context, roomid string) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	go func() {
+		// This is technically a dangling goroutine
 		io.Copy(os.Stdout, rw.Reader)
 	}()
 
