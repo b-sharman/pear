@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/spf13/cobra"
 	bolt "go.etcd.io/bbolt"
@@ -146,5 +149,9 @@ func relayServer() {
 		return
 	}
 
-	// TODO: set up a nice channel thing so we can call defer relay.Close()?
+	relayInfo := peer.AddrInfo{
+		ID:    node.ID(),
+		Addrs: node.Addrs(),
+	}
+	client.Reserve(context.Background(), node, relayInfo)
 }
