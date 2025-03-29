@@ -15,7 +15,10 @@ var hostCmd = &cobra.Command{
 	Use:   "host",
 	Short: "Start a pear session",
 	Run: func(cmd *cobra.Command, args []string) {
-		host.Start()
+		err := host.Start()
+		if err != nil {
+			panic(err)
+		}
 	},
 }
 

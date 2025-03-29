@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const serverUrl = "https://pear-programming.fly.dev"
+
 func getAddr(roomid string) string {
 	u, _ := url.Parse(serverUrl)
 	u = u.JoinPath("lookup")

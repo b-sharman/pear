@@ -12,8 +12,6 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-const serverUrl = "https://pear-programming.fly.dev"
-
 func Start(roomid string) {
 	// start a libp2p node that listens on a random local TCP port,
 	// but without running the built-in ping protocol
