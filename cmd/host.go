@@ -5,6 +5,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/b-sharman/pear/p2p/host"
 	"github.com/spf13/cobra"
 	"github.com/wordgen/wordgen"
@@ -12,11 +16,18 @@ import (
 	"golang.org/x/text/language"
 )
 
-// hostCmd represents the host command
 var hostCmd = &cobra.Command{
 	Use:   "host",
 	Short: "Start a pear session",
 	Run: func(cmd *cobra.Command, args []string) {
+		exitSig := make(chan int)
+		go func() {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+			<-ch
+			exitSig <- 1
+		}()
+
 		gen := wordgen.NewGenerator()
 		gen.Words = wordlists.EffLarge
 		gen.Count = 3
@@ -30,7 +41,7 @@ var hostCmd = &cobra.Command{
 			return
 		}
 
-		if err = host.Start(result); err != nil {
+		if err = host.Start(result, exitSig); err != nil {
 			panic(err)
 		}
 	},

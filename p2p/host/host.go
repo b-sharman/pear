@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -15,24 +16,23 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-func Start(roomid string) error {
+func Start(roomid string, exitSignal chan int) error {
 	// start a libp2p node that listens on a random local TCP port
 	node, err := libp2p.New()
 	if err != nil {
 		panic(err)
 	}
 
-	// print the node's PeerInfo in multiaddr format
-	peerInfo := peerstore.AddrInfo{
-		ID:    node.ID(),
-		Addrs: node.Addrs(),
+	// get opened port
+	var port string
+	for _, la := range node.Network().ListenAddresses() {
+		if p, err := la.ValueForProtocol(multiaddr.P_TCP); err == nil {
+			port = p
+			break
+		}
 	}
-	addrs, err := peerstore.AddrInfoToP2pAddrs(&peerInfo)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("libp2p node address:", addrs[0])
-	err = registerRoom(addrs, roomid)
+
+	err = registerRoom(port, node.ID(), roomid)
 	if err != nil {
 		return err
 	}
@@ -46,12 +46,24 @@ func Start(roomid string) error {
 
 		cmd.Run()
 	})
+	<-exitSignal
 
 	return nil
 }
 
-func registerRoom(addrs []multiaddr.Multiaddr, roomid string) error {
-	b := bytes.NewBufferString(addrs[0].String())
+func registerRoom(port string, id peerstore.ID, roomid string) error {
+	// retrieve public IP
+	res, err := http.Get("https://checkip.amazonaws.com/")
+	if err != nil {
+		return err
+	}
+	ip, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	// create addr string from public ip, port, and id
+	b := bytes.NewBufferString(fmt.Sprintf("/ip4/%s/tcp/%v/p2p/%s", ip, port, id))
 
 	u, _ := url.Parse(p2p.ServerUrl)
 	u = u.JoinPath("register", roomid)
@@ -60,7 +72,7 @@ func registerRoom(addrs []multiaddr.Multiaddr, roomid string) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("name server returned %s\n", resp.Status)
 	}
 	return nil
