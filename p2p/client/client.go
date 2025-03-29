@@ -33,7 +33,7 @@ func Start(roomid string) {
 	}
 	fmt.Println("libp2p node address:", addrs[0])
 
-	addrStr := getAddr(os.Args[1])
+	addrStr := getAddr(roomid)
 	fmt.Printf("connecting to %s\n", addrStr)
 
 	addr, err := multiaddr.NewMultiaddr(roomid)
