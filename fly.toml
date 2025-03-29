@@ -25,3 +25,10 @@ primary_region = 'ord'
 
 [[vm]]
   size = 'shared-cpu-1x'
+
+[[services]]
+  internal_port = 1337
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = "1337"
