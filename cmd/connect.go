@@ -11,13 +11,11 @@ var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Connect to a room",
 	Args: cobra.ExactArgs(1),
-	Run: connect,
+	Run: func (cmd *cobra.Command, args []string) {
+		client.Start(args[0])
+	},
 }
 
 func init() {
 	rootCmd.AddCommand(connectCmd)
-}
-
-func connect(cmd *cobra.Command, args []string) {
-	client.Start(args[0])
 }
