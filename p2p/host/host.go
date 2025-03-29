@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"strings"
 
 	"github.com/b-sharman/pear/p2p"
 	"github.com/libp2p/go-libp2p"
@@ -46,6 +47,7 @@ func Start(roomid string, exitSignal chan int) error {
 
 		cmd.Run()
 	})
+	fmt.Println("Created room " + roomid)
 	<-exitSignal
 
 	return nil
@@ -63,7 +65,7 @@ func registerRoom(port string, id peerstore.ID, roomid string) error {
 	}
 
 	// create addr string from public ip, port, and id
-	b := bytes.NewBufferString(fmt.Sprintf("/ip4/%s/tcp/%v/p2p/%s", ip, port, id))
+	b := bytes.NewBufferString(fmt.Sprintf("/ip4/%s/tcp/%v/p2p/%s", strings.TrimSpace(string(ip)), port, id))
 
 	u, _ := url.Parse(p2p.ServerUrl)
 	u = u.JoinPath("register", roomid)
