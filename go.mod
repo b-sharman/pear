@@ -6,6 +6,8 @@ require (
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/spf13/cobra v1.9.1
+	github.com/wordgen/wordgen v0.4.0
+	github.com/wordgen/wordlists v0.3.0
 	go.etcd.io/bbolt v1.4.0
 )
 
@@ -95,6 +97,8 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
+	github.com/wordgen/wordlists/eff v0.3.0 // indirect
+	github.com/wordgen/wordlists/names v0.3.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
 	go.uber.org/mock v0.5.0 // indirect

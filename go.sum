@@ -315,6 +315,14 @@ github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMI
 github.com/wlynxg/anet v0.0.3/go.mod h1:eay5PRQr7fIVAMbTbchTnO9gG65Hg/uYGdc7mguHxoA=
 github.com/wlynxg/anet v0.0.5 h1:J3VJGi1gvo0JwZ/P1/Yc/8p63SoW98B5dHkYDmpgvvU=
 github.com/wlynxg/anet v0.0.5/go.mod h1:eay5PRQr7fIVAMbTbchTnO9gG65Hg/uYGdc7mguHxoA=
+github.com/wordgen/wordgen v0.4.0 h1:auxV46r9QSW2rvidzW1iBjA+ftl3owEHZrP/1GTRAus=
+github.com/wordgen/wordgen v0.4.0/go.mod h1:x90ETdoxrm7I7qhVxT8QJHoOgEv66YDen1fUadBNHiI=
+github.com/wordgen/wordlists v0.3.0 h1:Q9xIl5506DIvNy3INC6Q+4KQwjfczzh/PZye4Tkkw3c=
+github.com/wordgen/wordlists v0.3.0/go.mod h1:M74rW8w0qhadSpPYkCx/rBWWQWEXKCP4VFLaUEhrLs8=
+github.com/wordgen/wordlists/eff v0.3.0 h1:rYCBa4ntXBHDkuu904KCejK+alZsz4+Aue539pXsghE=
+github.com/wordgen/wordlists/eff v0.3.0/go.mod h1:hsLXGcWdZhzUQ9QXCMrXHl4euoclcCadzhQe2ERLL6w=
+github.com/wordgen/wordlists/names v0.3.0 h1:C0MOiqGisPE/KLabX4ZpJnmztF226xSlAbM++Z7anZc=
+github.com/wordgen/wordlists/names v0.3.0/go.mod h1:qpt/50GQaDbuQk+nXs0EuEdVcTywAcL6eDRrD4vikHY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
