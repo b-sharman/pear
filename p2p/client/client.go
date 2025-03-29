@@ -13,8 +13,7 @@ import (
 )
 
 func Start(roomid string) {
-	// start a libp2p node that listens on a random local TCP port,
-	// but without running the built-in ping protocol
+	// start a libp2p node that listens on a random local TCP port
 	node, err := libp2p.New()
 	if err != nil {
 		panic(err)
@@ -34,6 +33,7 @@ func Start(roomid string) {
 	addrStr := getAddr(roomid)
 	fmt.Printf("connecting to %s\n", addrStr)
 
+	// get a peerstore.AddrInfo from addrStr
 	addr, err := multiaddr.NewMultiaddr(addrStr)
 	if err != nil {
 		panic(err)
@@ -42,6 +42,8 @@ func Start(roomid string) {
 	if err != nil {
 		panic(err)
 	}
+
+	// connect to the peer node
 	if err := node.Connect(context.Background(), *peer); err != nil {
 		panic(err)
 	}
