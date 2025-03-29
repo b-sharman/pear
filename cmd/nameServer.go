@@ -124,9 +124,11 @@ func relayServer() {
 		return
 	}
 
+	port := 1337
 	_, err = libp2p.New(
 		libp2p.EnableRelayService(),
 		libp2p.Identity(key),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)),
 	)
 	if err != nil {
 		log.Panicln("unable to start/make new libp2p node")
