@@ -36,7 +36,7 @@ func Start(roomid string) {
 	addrStr := getAddr(roomid)
 	fmt.Printf("connecting to %s\n", addrStr)
 
-	addr, err := multiaddr.NewMultiaddr(roomid)
+	addr, err := multiaddr.NewMultiaddr(addrStr)
 	if err != nil {
 		panic(err)
 	}
