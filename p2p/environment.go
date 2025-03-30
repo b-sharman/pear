@@ -2,10 +2,10 @@ package p2p
 
 import "github.com/multiformats/go-multiaddr"
 
-const ServerUrl = "https://pear-programming.fly.dev/api"
+const ServerUrl = "http://localhost:8080/api"
 const ProtocolID = "/pear-programming/1.0.0"
 
-var relayMultiAddrs = [...]string{"/dns4/pear-programming.fly.dev/tcp/3000/p2p/12D3KooWQowZAkJL3HX61Mar8hGi1eJdEoe7ybnu3mFun7aSL3NW"}
+var relayMultiAddrs = [...]string{"/dns4/localhost/tcp/3000/p2p/12D3KooWM5NWsHa8uQ11K1FUbo1jbcrd2ceDx1Nt3H3sUcthAqMM"}
 
 func RelayMultiAddrs() []multiaddr.Multiaddr {
 	addrs := []multiaddr.Multiaddr{}

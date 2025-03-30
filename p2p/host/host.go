@@ -3,11 +3,12 @@ package host
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os/exec"
+	// "os/exec"
 	"strings"
 
 	"github.com/b-sharman/pear/p2p"
@@ -15,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	peerstore "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -49,14 +51,22 @@ func Start(roomid string, exitSignal chan int) error {
 		return err
 	}
 
+	_, err = client.Reserve(context.Background(), node, *relay)
+	if err != nil {
+		fmt.Printf("Host failed to receive a relay reservation from relay.")
+		panic(err)
+	}
+
 	node.SetStreamHandler(p2p.ProtocolID, func(s network.Stream) {
 		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
-		cmd := exec.Command("man", "cat")
-		cmd.Stdin = rw.Reader
-		cmd.Stdout = rw.Writer
+		// cmd := exec.Command("man", "cat")
+		// cmd.Stdin = rw.Reader
+		// cmd.Stdout = rw.Writer
 
-		cmd.Run()
+		// cmd.Run()
+		rw.WriteString("This is a test string!")
+		fmt.Println("Wrote to stream!")
 	})
 	fmt.Println("Created room " + roomid)
 	<-exitSignal
@@ -75,7 +85,7 @@ func registerRoom(port string, id peerstore.ID, roomid string) error {
 		return err
 	}
 
-	// create addr string from public ip, port, and id
+	// create address string from public ip, port, and id
 	b := bytes.NewBufferString(fmt.Sprintf("/ip4/%s/tcp/%v/p2p/%s", strings.TrimSpace(string(ip)), port, id))
 
 	u, _ := url.Parse(p2p.ServerUrl)

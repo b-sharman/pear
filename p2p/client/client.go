@@ -1,11 +1,11 @@
 package client
 
 import (
-	"bufio"
+	// "bufio"
 	"context"
 	"fmt"
 	"io"
-	"os"
+	// "os"
 
 	"github.com/b-sharman/pear/p2p"
 	"github.com/libp2p/go-libp2p"
@@ -38,6 +38,7 @@ func Start(ctx context.Context, roomid string) {
 	if err := node.Connect(context.Background(), *relay); err != nil {
 		panic(err)
 	}
+	fmt.Println("Connected to relay!")
 
 	// Print this node's `PeerInfo` in multiaddr format
 	peerInfo := peerstore.AddrInfo{
@@ -67,29 +68,50 @@ func Start(ctx context.Context, roomid string) {
 		panic(err)
 	}
 
+	relayaddr, err := multiaddr.NewMultiaddr("/p2p/" + relay.ID.String() + "/p2p-circuit/p2p/" + peer.ID.String())
+	peerrelayinfo := peerstore.AddrInfo{
+		ID:    peer.ID,
+		Addrs: []multiaddr.Multiaddr{relayaddr},
+	}
+
 	// Connect to the peer node
-	if err := node.Connect(ctx, *peer); err != nil {
+	if err := node.Connect(ctx, peerrelayinfo); err != nil {
 		panic(err)
 	}
 
-	stream, err := node.NewStream(ctx, peer.ID, protocol.ID(p2p.ProtocolID))
+	stream, err := node.NewStream(ctx, peerrelayinfo.ID, protocol.ID(p2p.ProtocolID))
 
-	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	// reader := bufio.NewReader(stream)
+	// writer := bufio.NewWriter(stream)
 
-	go func() {
-		// This is technically a dangling go routine
-		io.Copy(os.Stdout, rw.Reader)
-	}()
+	// go func() {
+	buf := make([]byte, 1024)
 
-	select {
-	case <-ctx.Done():
-		return
-	default:
-		// actual long work
-		io.Copy(rw.Writer, os.Stdin)
+	for {
+		n, err := stream.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		if n > 0 {
+			fmt.Print(buf[:n])
+		}
 	}
+	// _, err = io.Copy(os.Stdout, reader)
+	// }()
 
-	stream.Close()
+	// select {
+	// case <-ctx.Done():
+	// 	return
+	// default:
+	// 	// actual long work
+	// 	io.Copy(rw.Writer, os.Stdin)
+	// }
+
+	// stream.Close()
 
 	// shut the node down
 	if err := node.Close(); err != nil {
