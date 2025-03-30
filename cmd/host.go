@@ -34,7 +34,7 @@ func host(cmd *cobra.Command, args []string) {
 	fmt.Println("host called")
 	conn, err := net.Dial("udp", hostname)
 	if err != nil {
-		log.Println(err.Error())
+		panic(err.Error())
 	}
 
 	// it's important that this is the first byte the server receives, so we call this synchronously
