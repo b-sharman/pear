@@ -13,19 +13,23 @@ import (
 	"github.com/b-sharman/pear/p2p"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	peerstore "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 )
 
 func Start(roomid string, exitSignal chan int) error {
 	// start a libp2p node that listens on a random local TCP port
+
+	relay, err := peer.AddrInfoFromP2pAddr(p2p.RelayMultiAddrs()[0])
+	if err != nil {
+		panic(err)
+	}
+
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
-		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{{
-			ID:    p2p.RelayPeerID,
-			Addrs: p2p.RelayMultiAddrs(),
-		}}),
+		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{*relay}),
 	)
 	if err != nil {
 		panic(err)
