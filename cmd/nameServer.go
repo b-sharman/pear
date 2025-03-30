@@ -125,7 +125,7 @@ func relayServer() {
 		return
 	}
 
-	_, err = crypto.UnmarshalEd25519PrivateKey(decodedKey)
+	key, err := crypto.UnmarshalEd25519PrivateKey(decodedKey)
 	if err != nil {
 		log.Panicln("unable to unmarshaled25519privatekey")
 		return
@@ -134,7 +134,7 @@ func relayServer() {
 	port := 3000
 	node, err := libp2p.New(
 		libp2p.EnableRelayService(),
-		//libp2p.Identity(key),
+		libp2p.Identity(key),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/dns4/0.0.0.0/tcp/%d", port)),
 	)
 	if err != nil {
