@@ -7,7 +7,6 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	peerstore "github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"golang.org/x/term"
 	"io"
@@ -26,7 +25,7 @@ func Start(ctx context.Context, roomid string) {
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
-		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{*relay}),
+		libp2p.EnableAutoRelayWithStaticRelays([]peer.AddrInfo{*relay}),
 	)
 	if err != nil {
 		panic(err)
@@ -39,11 +38,11 @@ func Start(ctx context.Context, roomid string) {
 	fmt.Println("Connected to relay!")
 
 	// Print this node's `PeerInfo` in multiaddr format
-	peerInfo := peerstore.AddrInfo{
+	peerInfo := peer.AddrInfo{
 		ID:    node.ID(),
 		Addrs: node.Addrs(),
 	}
-	addrs, err := peerstore.AddrInfoToP2pAddrs(&peerInfo)
+	addrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
 	if err != nil {
 		panic(err)
 	}
@@ -56,19 +55,19 @@ func Start(ctx context.Context, roomid string) {
 	}
 	fmt.Printf("connecting to %s\n", addrStr)
 
-	// Get a peerstore.AddrInfo from addrStr
+	// Get a peer.AddrInfo from addrStr
 	addr, err := multiaddr.NewMultiaddr(addrStr)
 	if err != nil {
 		panic(err)
 	}
-	peer, err := peerstore.AddrInfoFromP2pAddr(addr)
+	peerAddrInfo, err := peer.AddrInfoFromP2pAddr(addr)
 	if err != nil {
 		panic(err)
 	}
 
-	relayaddr, err := multiaddr.NewMultiaddr("/p2p/" + relay.ID.String() + "/p2p-circuit/p2p/" + peer.ID.String())
-	peerrelayinfo := peerstore.AddrInfo{
-		ID:    peer.ID,
+	relayaddr, err := multiaddr.NewMultiaddr("/p2p/" + relay.ID.String() + "/p2p-circuit/p2p/" + peerAddrInfo.ID.String())
+	peerrelayinfo := peer.AddrInfo{
+		ID:    peerAddrInfo.ID,
 		Addrs: []multiaddr.Multiaddr{relayaddr},
 	}
 

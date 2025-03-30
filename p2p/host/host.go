@@ -18,7 +18,6 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	peerstore "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 	"github.com/multiformats/go-multiaddr"
 	"golang.org/x/term"
@@ -35,7 +34,7 @@ func Start(roomid string, exitSignal chan int) error {
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
-		libp2p.EnableAutoRelayWithStaticRelays([]peerstore.AddrInfo{*relay}),
+		libp2p.EnableAutoRelayWithStaticRelays([]peer.AddrInfo{*relay}),
 	)
 	if err != nil {
 		panic(err)
@@ -114,7 +113,7 @@ func cleanUpRoomId(roomid string) error {
 	return err
 }
 
-func registerRoom(port string, id peerstore.ID, roomid string) error {
+func registerRoom(port string, id peer.ID, roomid string) error {
 	// retrieve public IP
 	res, err := http.Get("https://checkip.amazonaws.com/")
 	if err != nil {
