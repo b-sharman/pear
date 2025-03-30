@@ -1,22 +1,20 @@
 package client
 
 import (
-	// "bufio"
 	"context"
 	"fmt"
-	"io"
-	// "os"
-
 	"github.com/b-sharman/pear/p2p"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	peerstore "github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/protocol"
 	multiaddr "github.com/multiformats/go-multiaddr"
+	"golang.org/x/term"
+	"io"
+	"os"
 )
 
 func Start(ctx context.Context, roomid string) {
-
 	relay, err := peer.AddrInfoFromP2pAddr(p2p.RelayMultiAddrs()[0])
 	if err != nil {
 		panic(err)
@@ -79,39 +77,24 @@ func Start(ctx context.Context, roomid string) {
 		panic(err)
 	}
 
-	stream, err := node.NewStream(ctx, peerrelayinfo.ID, protocol.ID(p2p.ProtocolID))
-
-	// reader := bufio.NewReader(stream)
-	// writer := bufio.NewWriter(stream)
-
-	// go func() {
-	buf := make([]byte, 1024)
-
-	for {
-		n, err := stream.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		if n > 0 {
-			fmt.Print(buf[:n])
-		}
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
 	}
-	// _, err = io.Copy(os.Stdout, reader)
-	// }()
 
-	// select {
-	// case <-ctx.Done():
-	// 	return
-	// default:
-	// 	// actual long work
-	// 	io.Copy(rw.Writer, os.Stdin)
-	// }
+	stream, err := node.NewStream(network.WithAllowLimitedConn(ctx, "connect"), peerrelayinfo.ID, "/connect/0.0.0")
+	if err != nil {
+		panic(err)
+	}
 
-	// stream.Close()
+	go func() { _, _ = io.Copy(os.Stdout, stream) }()
+	go func() { _, _ = io.Copy(stream, os.Stdin) }()
+	<-ctx.Done()
+	term.Restore(int(os.Stdin.Fd()), oldState)
+
+	if err := stream.Close(); err != nil {
+		panic(err)
+	}
 
 	// shut the node down
 	if err := node.Close(); err != nil {

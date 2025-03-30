@@ -1,23 +1,27 @@
 package host
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	// "os/exec"
+	"os"
+	"time"
+
+	"os/exec"
 	"strings"
 
 	"github.com/b-sharman/pear/p2p"
+	"github.com/creack/pty"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	peerstore "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 	"github.com/multiformats/go-multiaddr"
+	"golang.org/x/term"
 )
 
 func Start(roomid string, exitSignal chan int) error {
@@ -57,19 +61,40 @@ func Start(roomid string, exitSignal chan int) error {
 		panic(err)
 	}
 
-	node.SetStreamHandler(p2p.ProtocolID, func(s network.Stream) {
-		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+	node.SetStreamHandler("/connect/0.0.0", func(s network.Stream) {
+		cmd := exec.Command("tmux", "attach-session", "-t", roomid)
 
-		// cmd := exec.Command("man", "cat")
-		// cmd.Stdin = rw.Reader
-		// cmd.Stdout = rw.Writer
+		// Start the command with a pty.
+		ptmx, err := pty.Start(cmd)
+		if err != nil {
+			panic(err)
+		}
+		// Make sure to close the pty at the end.
+		defer func() { _ = ptmx.Close() }() // Best effort.
 
-		// cmd.Run()
-		rw.WriteString("This is a test string!")
-		fmt.Println("Wrote to stream!")
+		// Copy stdin to the pty and the pty to stdout.
+		// NOTE: The goroutine will keep reading until the next keystroke before returning.
+		go func() { _, _ = io.Copy(ptmx, s) }()
+		_, _ = io.Copy(s, ptmx)
 	})
+
 	fmt.Println("Created room " + roomid)
+	fmt.Println("Starting server...")
+	time.Sleep(time.Second * 4)
+	cmd := exec.Command("tmux", "new-session", "-s", roomid)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	cmd.Run()
+	term.Restore(int(os.Stdin.Fd()), oldState)
+
 	<-exitSignal
+
+	node.Close()
 
 	return nil
 }
