@@ -65,6 +65,7 @@ func Start(roomid string, exitSignal chan int) error {
 
 		// Start the command with a pty.
 		ptmx, err := pty.Start(cmd)
+		pty.InheritSize(os.Stdout, ptmx)
 		if err != nil {
 			panic(err)
 		}

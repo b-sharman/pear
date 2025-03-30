@@ -14,6 +14,8 @@ import (
 )
 
 func Start(ctx context.Context, roomid string) {
+	ctx, cancel := context.WithCancel(ctx)
+
 	relay, err := peer.AddrInfoFromP2pAddr(p2p.RelayMultiAddrs()[0])
 	if err != nil {
 		panic(err)
@@ -80,16 +82,19 @@ func Start(ctx context.Context, roomid string) {
 	if err != nil {
 		panic(err)
 	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	stream, err := node.NewStream(network.WithAllowLimitedConn(ctx, "connect"), peerrelayinfo.ID, "/connect/0.0.0")
 	if err != nil {
 		panic(err)
 	}
 
-	go func() { _, _ = io.Copy(os.Stdout, stream) }()
+	go func() {
+		_, _ = io.Copy(os.Stdout, stream)
+		cancel()
+	}()
 	go func() { _, _ = io.Copy(stream, os.Stdin) }()
 	<-ctx.Done()
-	term.Restore(int(os.Stdin.Fd()), oldState)
 
 	if err := stream.Close(); err != nil {
 		panic(err)
