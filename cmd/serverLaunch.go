@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -61,20 +60,9 @@ func udpRelayServer(addr string) {
 			log.Println("Error reading from UDP:", err)
 			continue
 		}
-		if err == nil {
-			go func() {
-				for {
-					_, err := conn.WriteTo([]byte("j"), remoteAddr)
-					if err != nil {
-						log.Println("Error writing to UDP:", err)
-					}
-					time.Sleep(time.Second * 4)
-				}
-			}()
-		}
 
 		// Write the received data directly to stdout
-		_, _ = os.Stdout.Write(buffer[:n])
+		_, err = os.Stdout.Write(buffer[:n])
 		if err != nil {
 			log.Println("Error writing to stdout:", err)
 		}
