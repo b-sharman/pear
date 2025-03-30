@@ -10,12 +10,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/b-sharman/pear/constants"
+
 	"github.com/creack/pty"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
-var hostname string
 
+var hostname string
 // hostCmd represents the host command
 var hostCmd = &cobra.Command{
 	Use:   "host",
@@ -34,6 +36,9 @@ func host(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Println(err.Error())
 	}
+
+	// it's important that this is the first byte the server receives, so we call this synchronously
+	conn.Write([]byte{constants.HOST})
 
 	c := exec.Command("tmux", "attach", "-t", "pear")
 
