@@ -96,7 +96,18 @@ func Start(roomid string, exitSignal chan int) error {
 
 	node.Close()
 
+	if err := cleanUpRoomId(roomid); err != nil {
+		panic(err)
+	}
+
 	return nil
+}
+
+func cleanUpRoomId(roomid string) error {
+	u, _ := url.Parse(p2p.ServerUrl)
+	u = u.JoinPath("register", roomid)
+	_, err := http.NewRequest("DELETE", u.String(), nil)
+	return err
 }
 
 func registerRoom(port string, id peerstore.ID, roomid string) error {
