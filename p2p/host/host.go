@@ -79,6 +79,10 @@ func Start(roomid string, exitSignal chan int) error {
 	})
 
 	fmt.Println("Created room " + roomid)
+	go func() {
+		http.HandleFunc("GET /roomid", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(roomid)) })
+		http.ListenAndServe(":8923", nil)
+	}()
 	fmt.Println("Starting server...")
 	time.Sleep(time.Second * 4)
 	cmd := exec.Command("tmux", "new-session", "-s", roomid)
