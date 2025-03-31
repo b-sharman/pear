@@ -64,7 +64,7 @@ func Start(roomid string, exitSignal chan int) error {
 
 	// multiaddr.String -> registered username
 	type peerUsername struct {
-		addr     string
+		id       string
 		username string
 	}
 
@@ -73,7 +73,7 @@ func Start(roomid string, exitSignal chan int) error {
 	node.SetStreamHandler("/username/0.0.0", func(s network.Stream) {
 		reader := bufio.NewReader(s)
 
-		peer := s.Conn().RemoteMultiaddr().Multiaddr().String()
+		peer := s.Conn().ID()
 		go func() {
 			name, err := reader.ReadString('\n')
 			if err != nil {
@@ -87,28 +87,29 @@ func Start(roomid string, exitSignal chan int) error {
 
 	// multiaddr.String -> registered username
 	type peerSize struct {
-		addr string
+		id   string
 		size pty.Winsize
 	}
 	resizeEvent := make(chan peerSize)
 	node.SetStreamHandler("/resize/0.0.0", func(s network.Stream) {
 		reader := bufio.NewReader(s)
 
-		peer := s.Conn().RemoteMultiaddr().Multiaddr().String()
+		peer := s.Conn().ID()
 		size := pty.Winsize{}
 		go func() {
-			b, err := reader.ReadBytes('\n')
-			if err != nil {
-				panic("Unable to read from stream!")
-			}
+			for {
+				b, err := reader.ReadBytes('\n')
+				if err != nil {
+					panic("Unable to read from stream!")
+				}
 
-			fmt.Println(b)
-			if err = json.Unmarshal(b, &size); err != nil {
-				panic("Unable to unmarshal size")
-			}
+				if err = json.Unmarshal(b, &size); err != nil {
+					panic("Unable to unmarshal size")
+				}
 
-			fmt.Println("Resize requested!")
-			resizeEvent <- peerSize{peer, size}
+				fmt.Println(size)
+				resizeEvent <- peerSize{peer, size}
+			}
 		}()
 	})
 
@@ -121,10 +122,10 @@ func Start(roomid string, exitSignal chan int) error {
 			panic(err)
 		}
 
-		peer := s.Conn().RemoteMultiaddr().Multiaddr().String()
+		peer := s.Conn().ID()
 		go func() {
 			for pSize := range resizeEvent {
-				if pSize.addr == peer {
+				if pSize.id == peer {
 					fmt.Println("Resizing!")
 					if err := pty.Setsize(ptmx, &pSize.size); err != nil {
 						fmt.Printf("error resizing pty: %s", err)
@@ -150,7 +151,7 @@ func Start(roomid string, exitSignal chan int) error {
 	}()
 	go func() {
 		for pName := range usernameEvent {
-			fmt.Printf("%s connected with username %s\n", pName.addr, pName.username)
+			fmt.Printf("%s connected with username %s\n", pName.id, pName.username)
 		}
 	}()
 	fmt.Println("Starting server...")

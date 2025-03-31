@@ -130,8 +130,9 @@ func Start(ctx context.Context, roomid string, username string) {
 	}
 	term.Restore(int(os.Stdin.Fd()), oldState)
 
-	stream.Close()
-	sizeStream.Close()
+	stream.Reset()
+	sizeStream.Reset()
+	usernameStream.Reset()
 
 	// shut the node down
 	if err := node.Close(); err != nil {
