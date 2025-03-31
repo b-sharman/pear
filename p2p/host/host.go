@@ -71,18 +71,17 @@ func Start(roomid string, exitSignal chan int) error {
 	usernameEvent := make(chan peerUsername)
 	usernames := map[string]string{}
 	node.SetStreamHandler("/username/0.0.0", func(s network.Stream) {
+		defer s.Reset()
 		reader := bufio.NewReader(s)
 
 		peer := s.Conn().ID()
-		go func() {
-			name, err := reader.ReadString('\n')
-			if err != nil {
-				panic("Unable to read from stream!")
-			}
+		name, err := reader.ReadString('\n')
+		if err != nil {
+			panic("Unable to read from stream!")
+		}
 
-			usernames[peer] = name
-			usernameEvent <- peerUsername{peer, name}
-		}()
+		usernames[peer] = name
+		usernameEvent <- peerUsername{peer, name}
 	})
 
 	// multiaddr.String -> registered username
@@ -92,44 +91,41 @@ func Start(roomid string, exitSignal chan int) error {
 	}
 	resizeEvent := make(chan peerSize)
 	node.SetStreamHandler("/resize/0.0.0", func(s network.Stream) {
+		defer s.Reset()
 		reader := bufio.NewReader(s)
 
 		peer := s.Conn().ID()
 		size := pty.Winsize{}
-		go func() {
-			for {
-				b, err := reader.ReadBytes('\n')
-				if err != nil {
-					panic("Unable to read from stream!")
-				}
 
-				if err = json.Unmarshal(b, &size); err != nil {
-					panic("Unable to unmarshal size")
-				}
-
-				fmt.Println(size)
-				resizeEvent <- peerSize{peer, size}
+		for {
+			b, err := reader.ReadBytes('\n')
+			if err != nil {
+				panic("Unable to read from stream!")
 			}
-		}()
+
+			if err = json.Unmarshal(b, &size); err != nil {
+				panic("Unable to unmarshal size")
+			}
+
+			resizeEvent <- peerSize{peer, size}
+		}
 	})
 
 	node.SetStreamHandler("/connect/0.0.0", func(s network.Stream) {
+		defer s.Reset()
 		cmd := exec.Command("tmux", "attach-session", "-t", roomid)
 
-		// Start the command with a pty.
 		ptmx, err := pty.Start(cmd)
 		if err != nil {
 			panic(err)
 		}
+		defer ptmx.Close()
 
 		peer := s.Conn().ID()
 		go func() {
 			for pSize := range resizeEvent {
 				if pSize.id == peer {
-					fmt.Println("Resizing!")
-					if err := pty.Setsize(ptmx, &pSize.size); err != nil {
-						fmt.Printf("error resizing pty: %s", err)
-					}
+					pty.Setsize(ptmx, &pSize.size)
 				}
 			}
 		}()
@@ -138,10 +134,7 @@ func Start(roomid string, exitSignal chan int) error {
 		go func() { _, _ = io.Copy(ptmx, s) }()
 		_, _ = io.Copy(s, ptmx)
 
-		// Make sure to close the pty at the end.
-		defer ptmx.Close()
-		defer s.Reset()
-		defer delete(usernames, peer)
+		delete(usernames, peer)
 	})
 
 	fmt.Println("Created room " + roomid)
@@ -165,10 +158,11 @@ func Start(roomid string, exitSignal chan int) error {
 		panic(err)
 	}
 	cmd.Run()
-	term.Restore(int(os.Stdin.Fd()), oldState)
+
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer fmt.Println()
 
 	node.Close()
-
 	if err := cleanUpRoomId(roomid); err != nil {
 		panic(err)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/b-sharman/pear/p2p"
 	"github.com/creack/pty"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
@@ -24,9 +25,8 @@ func Start(ctx context.Context, roomid string, username string) {
 		panic(err)
 	}
 
-	fmt.Println("relay", relay)
+	fmt.Println("Relay", relay.ID)
 
-	// start a libp2p node that listens on a random local TCP port
 	node, err := libp2p.New(
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
@@ -37,28 +37,17 @@ func Start(ctx context.Context, roomid string, username string) {
 	}
 
 	// connect to the relay
-	if err := node.Connect(context.Background(), *relay); err != nil {
+	if err := node.Connect(ctx, *relay); err != nil {
 		panic(err)
 	}
 	fmt.Println("Connected to relay!")
-
-	// Print this node's `PeerInfo` in multiaddr format
-	peerInfo := peer.AddrInfo{
-		ID:    node.ID(),
-		Addrs: node.Addrs(),
-	}
-	addrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("libp2p node address:", addrs[0])
 
 	addrStr, err := getAddr(roomid)
 	if err != nil {
 		fmt.Printf("encountered err on getting addr: %s\n", err.Error())
 		return
 	}
-	fmt.Printf("connecting to %s\n", addrStr)
+	fmt.Printf("Connecting to %s\n", addrStr)
 
 	// Get a peer.AddrInfo from addrStr
 	addr, err := multiaddr.NewMultiaddr(addrStr)
@@ -70,43 +59,62 @@ func Start(ctx context.Context, roomid string, username string) {
 		panic(err)
 	}
 
-	relayaddr, err := multiaddr.NewMultiaddr("/p2p/" + relay.ID.String() + "/p2p-circuit/p2p/" + peerAddrInfo.ID.String())
-	peerrelayinfo := peer.AddrInfo{
+	peerAddr, err := multiaddr.NewMultiaddr("/p2p/" + relay.ID.String() + "/p2p-circuit/p2p/" + peerAddrInfo.ID.String())
+	peerInfo := peer.AddrInfo{
 		ID:    peerAddrInfo.ID,
-		Addrs: []multiaddr.Multiaddr{relayaddr},
+		Addrs: []multiaddr.Multiaddr{peerAddr},
 	}
+
+	ctx = network.WithAllowLimitedConn(ctx, "REASON")
+	bundle := network.NotifyBundle{
+		ConnectedF: func(_ network.Network, conn network.Conn) {
+			if conn.RemotePeer() == peerInfo.ID {
+				fmt.Println("Connected to " + conn.RemoteMultiaddr().String() + " ID: " + conn.ID())
+
+				sendUsername(username, ctx, node, peerInfo.ID)
+				streamStdIO(ctx, node, peerInfo.ID)
+				resizeHandler(ctx, node, peerInfo.ID)
+			}
+		},
+		DisconnectedF: func(_ network.Network, conn network.Conn) {
+			fmt.Println("Disconnected from " + conn.RemoteMultiaddr().String() + " ID: " + conn.ID())
+		},
+	}
+	node.Network().Notify(&bundle)
 
 	// Connect to the peer node
-	if err := node.Connect(ctx, peerrelayinfo); err != nil {
+	if err := node.Connect(ctx, peerInfo); err != nil {
+		panic(err)
+	}
+	<-ctx.Done()
+
+	// shut the node down
+	defer func() {
+		if err := node.Close(); err != nil {
+			panic(err)
+		}
+	}()
+}
+
+func sendUsername(username string, ctx context.Context, node host.Host, peerid peer.ID) {
+	stream, err := node.NewStream(ctx, peerid, "/username/0.0.0")
+	if err != nil {
 		panic(err)
 	}
 
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		panic(err)
-	}
+	stream.Write([]byte(username))
+	stream.Write([]byte{'\n'})
+}
 
-	ctx = network.WithAllowLimitedConn(ctx, "connect")
-	stream, err := node.NewStream(ctx, peerrelayinfo.ID, "/connect/0.0.0")
-	if err != nil {
-		panic(err)
-	}
-	sizeStream, err := node.NewStream(ctx, peerrelayinfo.ID, "/resize/0.0.0")
-	if err != nil {
-		panic(err)
-	}
-	usernameStream, err := node.NewStream(ctx, peerrelayinfo.ID, "/username/0.0.0")
-	if err != nil {
-		panic(err)
-	}
-	usernameStream.Write([]byte(username))
-	usernameStream.Write([]byte{'\n'})
-	if err := usernameStream.Close(); err != nil {
-		panic(err)
-	}
-
+func resizeHandler(ctx context.Context, node host.Host, peerid peer.ID) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGWINCH)
+
+	stream, err := node.NewStream(ctx, peerid, "/resize/0.0.0")
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
 		for range ch {
 			size, err := pty.GetsizeFull(os.Stdout)
@@ -118,24 +126,25 @@ func Start(ctx context.Context, roomid string, username string) {
 			if err != nil {
 				panic("Unable to marshal size")
 			}
-			sizeStream.Write(marshaledSize)
-			sizeStream.Write([]byte{'\n'})
+
+			stream.Write(marshaledSize)
+			stream.Write([]byte{'\n'})
 		}
 	}()
 	ch <- syscall.SIGWINCH // Initial resize.
+}
 
-	go func() { _, _ = io.Copy(os.Stdout, stream) }()
-	go func() { _, _ = io.Copy(stream, os.Stdin) }()
-	for !stream.Conn().IsClosed() {
-	}
-	term.Restore(int(os.Stdin.Fd()), oldState)
-
-	stream.Reset()
-	sizeStream.Reset()
-	usernameStream.Reset()
-
-	// shut the node down
-	if err := node.Close(); err != nil {
+func streamStdIO(ctx context.Context, node host.Host, peerid peer.ID) {
+	stream, err := node.NewStream(ctx, peerid, "/connect/0.0.0")
+	if err != nil {
 		panic(err)
 	}
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	go func() { _, _ = io.Copy(os.Stdout, stream) }()
+	_, _ = io.Copy(stream, os.Stdin)
+
+	stream.Reset()
 }
