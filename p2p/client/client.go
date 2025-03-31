@@ -2,18 +2,23 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/b-sharman/pear/p2p"
+	"github.com/creack/pty"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"golang.org/x/term"
-	"io"
-	"os"
 )
 
-func Start(ctx context.Context, roomid string) {
+func Start(ctx context.Context, roomid string, username string) {
 	relay, err := peer.AddrInfoFromP2pAddr(p2p.RelayMultiAddrs()[0])
 	if err != nil {
 		panic(err)
@@ -81,19 +86,52 @@ func Start(ctx context.Context, roomid string) {
 		panic(err)
 	}
 
-	stream, err := node.NewStream(network.WithAllowLimitedConn(ctx, "connect"), peerrelayinfo.ID, "/connect/0.0.0")
+	ctx = network.WithAllowLimitedConn(ctx, "connect")
+	stream, err := node.NewStream(ctx, peerrelayinfo.ID, "/connect/0.0.0")
 	if err != nil {
 		panic(err)
 	}
+	sizeStream, err := node.NewStream(ctx, peerrelayinfo.ID, "/resize/0.0.0")
+	if err != nil {
+		panic(err)
+	}
+	usernameStream, err := node.NewStream(ctx, peerrelayinfo.ID, "/username/0.0.0")
+	if err != nil {
+		panic(err)
+	}
+	usernameStream.Write([]byte(username))
+	usernameStream.Write([]byte{'\n'})
+	if err := usernameStream.Close(); err != nil {
+		panic(err)
+	}
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGWINCH)
+	go func() {
+		for range ch {
+			size, err := pty.GetsizeFull(os.Stdout)
+			if err != nil {
+				panic("Unable to read terminal size")
+			}
+
+			marshaledSize, err := json.Marshal(size)
+			if err != nil {
+				panic("Unable to marshal size")
+			}
+			sizeStream.Write(marshaledSize)
+			sizeStream.Write([]byte{'\n'})
+		}
+	}()
+	ch <- syscall.SIGWINCH // Initial resize.
 
 	go func() { _, _ = io.Copy(os.Stdout, stream) }()
 	go func() { _, _ = io.Copy(stream, os.Stdin) }()
-	<-ctx.Done()
+	for !stream.Conn().IsClosed() {
+	}
 	term.Restore(int(os.Stdin.Fd()), oldState)
 
-	if err := stream.Close(); err != nil {
-		panic(err)
-	}
+	stream.Close()
+	sizeStream.Close()
 
 	// shut the node down
 	if err := node.Close(); err != nil {

@@ -15,7 +15,7 @@ import (
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Connect to a room",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -26,7 +26,7 @@ var connectCmd = &cobra.Command{
 			cancel()
 		}()
 
-		client.Start(ctx, args[0])
+		client.Start(ctx, args[0], args[1])
 	},
 }
 
